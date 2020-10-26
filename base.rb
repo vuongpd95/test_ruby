@@ -1,9 +1,22 @@
 require 'rubygems'
 require 'bundler'
+require 'pp'
 Bundler.require(:default)
 
 require "json"
 require "benchmark"
+
+class Hash
+  def -(val)
+    val = val.to_hash
+    return {} if self.keys.sort != val.keys.sort
+    result = {}
+    self.each do |k, v|
+      result[k] = v.to_int - val[k].to_int
+    end
+    result
+  end
+end
 
 def measure(&block)
   no_gc = (ARGV[0] == "--no-gc")
@@ -19,19 +32,20 @@ def measure(&block)
   time = Benchmark.realtime do
     yield
   end
-    # puts ObjectSpace.count_objects
+  obefore = ObjectSpace.count_objects
   unless no_gc
-    GC.start # Defaults as of 2.7.0: (full_mark: true, immediate_sweep: true)
+    GC.start(full_mark: true, immediate_sweep: true)
   end
-  # puts ObjectSpace.count_objects
+  oafter = ObjectSpace.count_objects
   gc_stat_after = GC.stat
   memory_after = `ps -o rss= -p #{Process.pid}`.to_i/1024
-  puts({
+  pp({
     RUBY_VERSION => {
       gc: no_gc ? 'disabled' : 'enabled',
       time: time.round(2),
       gc_count: gc_stat_after[:count] - gc_stat_before[:count],
-      memory: "%d MB" % (memory_after - memory_before)
+      memory: "%d MB" % (memory_after - memory_before),
+      object_space: (oafter - obefore)
     }
-  }.to_json)
+  })
 end
