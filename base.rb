@@ -21,7 +21,7 @@ def measure(&block)
   end
     # puts ObjectSpace.count_objects
   unless no_gc
-    GC.start(full_mark: true, immediate_sweep: true, immediate_mark: false)
+    GC.start # Defaults as of 2.7.0: (full_mark: true, immediate_sweep: true)
   end
   # puts ObjectSpace.count_objects
   gc_stat_after = GC.stat
